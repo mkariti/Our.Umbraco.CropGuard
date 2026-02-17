@@ -36,7 +36,7 @@ public sealed class CropGuardMiddleware
                 if (opts.LogBlockedRequests)
                 {
                     _logger.LogWarning(
-                        "ImageProcessProtector: blocked request {Path}{QueryString}",
+                        "CropGuard: blocked request {Path}{QueryString}",
                         context.Request.Path,
                         context.Request.QueryString);
                 }

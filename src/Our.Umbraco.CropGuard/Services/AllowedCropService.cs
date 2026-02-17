@@ -98,7 +98,7 @@ public sealed class AllowedCropService : IAllowedCropService
 
         var lookup = new HashSet<CropKey>(crops.Select(c => c.Key));
 
-        _logger.LogDebug("ImageProcessProtector: loaded {Count} allowed crops", lookup.Count);
+        _logger.LogDebug("CropGuard: loaded {Count} allowed crops", lookup.Count);
 
         var entry = (crops as IReadOnlyList<AllowedCrop>, lookup);
         _cache.Set(CacheKey, entry, opts.CacheDuration);
@@ -114,7 +114,7 @@ public sealed class AllowedCropService : IAllowedCropService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "ImageProcessProtector: failed to read data types from Umbraco");
+            _logger.LogWarning(ex, "CropGuard: failed to read data types from Umbraco");
             yield break;
         }
 
@@ -133,7 +133,7 @@ public sealed class AllowedCropService : IAllowedCropService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "ImageProcessProtector: failed to extract crops from data type '{Name}'", dataType.Name);
+                _logger.LogWarning(ex, "CropGuard: failed to extract crops from data type '{Name}'", dataType.Name);
             }
 
             if (extracted is null)
@@ -190,7 +190,7 @@ public sealed class AllowedCropService : IAllowedCropService
         }
         catch (JsonException ex)
         {
-            _logger.LogWarning(ex, "ImageProcessProtector: failed to deserialize custom crops from database");
+            _logger.LogWarning(ex, "CropGuard: failed to deserialize custom crops from database");
             return [];
         }
     }
