@@ -1,0 +1,44 @@
+# Build outputs
+bin/
+obj/
+out/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docobj
+*.rsuser
+.vscode/
+
+# Rider
+.idea/
+
+# Test results
+TestResults/
+coverage*/
+
+# Umbraco generated / runtime files
+tests/Our.Umbraco.CropGuard.TestSite/umbraco/Data/
+tests/Our.Umbraco.CropGuard.TestSite/umbraco/Logs/
+tests/Our.Umbraco.CropGuard.TestSite/umbraco/mediacache/
+tests/Our.Umbraco.CropGuard.TestSite/wwwroot/media/
+tests/Our.Umbraco.CropGuard.TestSite/*.sqlite.db
+tests/Our.Umbraco.CropGuard.TestSite/*.sqlite.db-shm
+tests/Our.Umbraco.CropGuard.TestSite/*.sqlite.db-wal
+tests/Our.Umbraco.CropGuard.TestSite/appsettings-schema*.json
+tests/Our.Umbraco.CropGuard.TestSite/umbraco-package-schema.json
+
+# OS
+.DS_Store
+Thumbs.db
+.claude/

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Our.Umbraco.CropGuard</RootNamespace>
+    <AssemblyName>Our.Umbraco.CropGuard</AssemblyName>
+
+    <!-- NuGet package metadata -->
+    <PackageId>Our.Umbraco.CropGuard</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Your Name</Authors>
+    <Description>Protects Umbraco image processing from abuse by only allowing pre-defined crops to proceed through the ImageSharp pipeline.</Description>
+    <PackageTags>umbraco;imagesharp;security;image-processing</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <!-- ASP.NET Core APIs (HttpContext, IMiddleware, etc.) -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Core" Version="17.0.0" />
+  </ItemGroup>
+
+  <!-- Bundle App_Plugins into the NuGet package as content files -->
+  <ItemGroup>
+    <Content Include="App_Plugins\**\*">
+      <Pack>true</Pack>
+      <PackagePath>contentFiles\any\any\App_Plugins\%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <BuildAction>Content</BuildAction>
+    </Content>
+  </ItemGroup>
+
+</Project>
