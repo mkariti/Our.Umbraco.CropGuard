@@ -31,7 +31,8 @@ coverage*/
 tests/Our.Umbraco.CropGuard.TestSite/umbraco/Data/
 tests/Our.Umbraco.CropGuard.TestSite/umbraco/Logs/
 tests/Our.Umbraco.CropGuard.TestSite/umbraco/mediacache/
-tests/Our.Umbraco.CropGuard.TestSite/wwwroot/media/
+tests/Our.Umbraco.CropGuard.TestSite/wwwroot/media/*
+!tests/Our.Umbraco.CropGuard.TestSite/wwwroot/media/.gitkeep
 tests/Our.Umbraco.CropGuard.TestSite/*.sqlite.db
 tests/Our.Umbraco.CropGuard.TestSite/*.sqlite.db-shm
 tests/Our.Umbraco.CropGuard.TestSite/*.sqlite.db-wal
