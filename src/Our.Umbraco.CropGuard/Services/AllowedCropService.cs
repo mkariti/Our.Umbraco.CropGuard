@@ -17,11 +17,17 @@ public sealed class AllowedCropService : IAllowedCropService
     // Constants.PropertyEditors.Aliases.ImageCropper
     private const string ImageCropperAlias = "Umbraco.ImageCropper";
 
+    // Fix 3: static to avoid allocating new options on every cache rebuild
+    private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     private readonly IDataTypeService _dataTypeService;
     private readonly IKeyValueService _keyValueService;
     private readonly IMemoryCache _cache;
     private readonly IOptionsMonitor<CropGuardOptions> _options;
     private readonly ILogger<AllowedCropService> _logger;
+
+    // Fix 1: prevents thundering herd when the cache expires under concurrent load
+    private readonly SemaphoreSlim _buildLock = new(1, 1);
 
     public AllowedCropService(
         IDataTypeService dataTypeService,
@@ -37,31 +43,41 @@ public sealed class AllowedCropService : IAllowedCropService
         _logger = logger;
     }
 
-    public async Task<bool> IsAllowedAsync(int width, int height)
+    // Fix 2: ValueTask<bool> with inline cache check — zero allocation on the hot (cache-warm) path
+    public ValueTask<bool> IsAllowedAsync(int width, int height)
     {
-        var (_, lookup) = await GetOrBuildCacheAsync();
+        if (_cache.TryGetValue(CacheKey, out (IReadOnlyList<AllowedCrop>, HashSet<CropKey> lookup) cached))
+            return ValueTask.FromResult(cached.lookup.Contains(new CropKey(width, height)));
+
+        return new ValueTask<bool>(IsAllowedSlowAsync(width, height));
+    }
+
+    private async Task<bool> IsAllowedSlowAsync(int width, int height)
+    {
+        var (_, lookup) = await BuildCacheAsync();
         return lookup.Contains(new CropKey(width, height));
     }
 
     public async Task<IReadOnlyList<AllowedCrop>> GetAllAsync()
     {
-        var (crops, _) = await GetOrBuildCacheAsync();
+        var (crops, _) = await BuildCacheAsync();
         return crops;
     }
 
-    public async Task AddCustomCropAsync(int width, int height, string? alias = null)
+    // Fix 4: no longer fake-async — return Task.CompletedTask directly
+    public Task AddCustomCropAsync(int width, int height, string? alias = null)
     {
         var existing = LoadCustomCrops();
         if (existing.Any(c => c.Width == width && c.Height == height))
-            return;
+            return Task.CompletedTask;
 
         existing.Add(new AllowedCrop { Width = width, Height = height, Alias = alias, Source = CropSource.Custom });
         PersistCustomCrops(existing);
         InvalidateCache();
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
-    public async Task RemoveCustomCropAsync(int width, int height)
+    public Task RemoveCustomCropAsync(int width, int height)
     {
         var existing = LoadCustomCrops();
         var removed = existing.RemoveAll(c => c.Width == width && c.Height == height);
@@ -70,39 +86,52 @@ public sealed class AllowedCropService : IAllowedCropService
             PersistCustomCrops(existing);
             InvalidateCache();
         }
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public void InvalidateCache() => _cache.Remove(CacheKey);
 
     // -------------------------------------------------------------------------
 
-    private async Task<(IReadOnlyList<AllowedCrop> crops, HashSet<CropKey> lookup)> GetOrBuildCacheAsync()
+    // Fix 1: double-check locking with SemaphoreSlim prevents concurrent rebuilds
+    private async Task<(IReadOnlyList<AllowedCrop> crops, HashSet<CropKey> lookup)> BuildCacheAsync()
     {
         if (_cache.TryGetValue(CacheKey, out (IReadOnlyList<AllowedCrop>, HashSet<CropKey>) cached))
             return cached;
 
-        var opts = _options.CurrentValue;
-        var crops = new List<AllowedCrop>();
+        await _buildLock.WaitAsync();
+        try
+        {
+            // Re-check inside the lock — another thread may have already built it
+            if (_cache.TryGetValue(CacheKey, out cached))
+                return cached;
 
-        // 1. Dynamic: read from Umbraco Image Cropper data type configurations
-        await foreach (var crop in ResolveDynamicCropsAsync())
-            crops.Add(crop);
+            var opts = _options.CurrentValue;
+            var crops = new List<AllowedCrop>();
 
-        // 2. Static: from appsettings.json
-        foreach (var s in opts.StaticCrops)
-            crops.Add(new AllowedCrop { Width = s.Width, Height = s.Height, Alias = s.Alias, Source = CropSource.Static });
+            // 1. Dynamic: read from Umbraco Image Cropper data type configurations
+            await foreach (var crop in ResolveDynamicCropsAsync())
+                crops.Add(crop);
 
-        // 3. Custom: persisted via the dashboard
-        crops.AddRange(LoadCustomCrops());
+            // 2. Static: from appsettings.json
+            foreach (var s in opts.StaticCrops)
+                crops.Add(new AllowedCrop { Width = s.Width, Height = s.Height, Alias = s.Alias, Source = CropSource.Static });
 
-        var lookup = new HashSet<CropKey>(crops.Select(c => c.Key));
+            // 3. Custom: persisted via the dashboard
+            crops.AddRange(LoadCustomCrops());
 
-        _logger.LogDebug("CropGuard: loaded {Count} allowed crops", lookup.Count);
+            var lookup = new HashSet<CropKey>(crops.Select(c => c.Key));
 
-        var entry = (crops as IReadOnlyList<AllowedCrop>, lookup);
-        _cache.Set(CacheKey, entry, opts.CacheDuration);
-        return entry;
+            _logger.LogDebug("CropGuard: loaded {Count} allowed crops", lookup.Count);
+
+            var entry = (crops as IReadOnlyList<AllowedCrop>, lookup);
+            _cache.Set(CacheKey, entry, opts.CacheDuration);
+            return entry;
+        }
+        finally
+        {
+            _buildLock.Release();
+        }
     }
 
     private async IAsyncEnumerable<AllowedCrop> ResolveDynamicCropsAsync()
@@ -152,10 +181,7 @@ public sealed class AllowedCropService : IAllowedCropService
     private static List<AllowedCrop> ExtractCropsFromConfig(object configObj)
     {
         var result = new List<AllowedCrop>();
-        var json = JsonSerializer.SerializeToElement(configObj, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        });
+        var json = JsonSerializer.SerializeToElement(configObj, _jsonOpts);
 
         if (!json.TryGetProperty("crops", out var cropsEl) || cropsEl.ValueKind != JsonValueKind.Array)
             return result;
