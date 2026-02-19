@@ -10,10 +10,24 @@
     <!-- NuGet package metadata -->
     <PackageId>Our.Umbraco.CropGuard</PackageId>
     <Version>1.0.0</Version>
-    <Authors>Your Name</Authors>
-    <Description>Protects Umbraco image processing from abuse by only allowing pre-defined crops to proceed through the ImageSharp pipeline.</Description>
-    <PackageTags>umbraco;imagesharp;security;image-processing</PackageTags>
+    <Authors>Moshe Kariti</Authors>
+    <Company>Moshe Kariti</Company>
+    <Product>CropGuard for Umbraco</Product>
+    <Description>Protects Umbraco image processing from abuse by only allowing pre-defined crops to proceed through the ImageSharp pipeline. Prevents resource exhaustion from arbitrary resize parameters.</Description>
+    <Copyright>Copyright © 2026 Moshe Kariti</Copyright>
+    <PackageTags>umbraco;umbraco-marketplace;imagesharp;security;image-processing;middleware;ddos-protection</PackageTags>
+    <PackageProjectUrl>https://github.com/mkariti/Our.Umbraco.CropGuard</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mkariti/Our.Umbraco.CropGuard</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>Initial release with dynamic crop detection, static crop configuration, and custom crop dashboard.</PackageReleaseNotes>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <!-- ASP.NET Core APIs (HttpContext, IMiddleware, etc.) -->
@@ -33,6 +47,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <BuildAction>Content</BuildAction>
     </Content>
+  </ItemGroup>
+
+  <!-- Include README and icon in the package -->
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="icon.png" Pack="true" PackagePath="\" Condition="Exists('icon.png')" />
   </ItemGroup>
 
 </Project>

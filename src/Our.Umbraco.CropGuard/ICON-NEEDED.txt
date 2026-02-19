@@ -1,0 +1,41 @@
+PACKAGE ICON NEEDED
+===================
+
+To complete the NuGet package, create a file named 'icon.png' in this directory.
+
+Requirements:
+- Dimensions: 128x128 pixels (exactly)
+- Format: PNG with transparency
+- Size: < 1MB
+- Design: Simple, recognizable at small sizes
+
+Design Suggestions:
+1. Shield icon with crop marks (security + image cropping)
+2. Lock icon with image frame
+3. Umbraco blue (#3544B1) with white icon
+4. Simple geometric shapes (no complex details)
+
+Quick Creation Options:
+
+1. AI Generation (ChatGPT, DALL-E, Midjourney):
+   "Create a simple flat icon of a shield with crop marks,
+   using Umbraco blue gradient (#3544B1), 128x128 PNG,
+   transparent background, minimalist style"
+
+2. Free Icon Sites (with attribution):
+   - https://www.flaticon.com
+   - https://icons8.com
+   - https://www.iconfinder.com
+
+3. Design Tools:
+   - Figma (free): https://figma.com
+   - Canva (free): https://canva.com
+   - Photoshop
+   - GIMP (free)
+
+Once created:
+1. Save as 'icon.png' in this directory (replace this txt file)
+2. Rebuild: dotnet pack -c Release
+3. Verify icon appears in the .nupkg
+
+The .csproj is already configured to include icon.png automatically.
