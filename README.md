@@ -107,6 +107,56 @@ Navigate to **Settings → CropGuard** in the Umbraco backoffice. From here you 
 
 > Requests that hit the cache are served directly from disk — ImageSharp only processes each unique combination **once**, so replay of known valid URLs is not a concern.
 
+## Monitoring & Logs
+
+CropGuard logs all important events using ASP.NET Core's standard `ILogger`. Enable detailed logging in `appsettings.json`:
+
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Our.Umbraco.CropGuard": "Debug"
+    }
+  }
+}
+```
+
+### What Gets Logged
+
+| Level | Event | Example |
+|---|---|---|
+| **Warning** | Blocked request | `CropGuard: blocked request /media/image.jpg?width=999&height=999` |
+| **Warning** | Configuration errors | `CropGuard: failed to read data types from Umbraco` |
+| **Debug** | Startup info | `CropGuard: loaded 15 allowed crops` |
+
+### Viewing Logs
+
+**In Umbraco Log Viewer** (recommended):
+1. Go to **Settings → Log Viewer** in the backoffice
+2. Search for "CropGuard" to filter relevant entries
+3. Set date range to see historical blocked requests
+
+**Via log files**:
+```bash
+# View recent CropGuard activity
+tail -f umbraco/Logs/*.json | grep -i cropguard
+
+# Count blocked requests today
+grep "CropGuard: blocked" umbraco/Logs/UmbracoTraceLog.*.json | wc -l
+```
+
+**Example log entry**:
+```json
+{
+  "@t": "2026-02-19T10:30:00.123Z",
+  "@mt": "CropGuard: blocked request {Path}{QueryString}",
+  "@l": "Warning",
+  "Path": "/media/abc123/image.jpg",
+  "QueryString": "?width=9999&height=9999",
+  "SourceContext": "Our.Umbraco.CropGuard.Middleware.CropGuardMiddleware"
+}
+```
+
 ## Development
 
 ### Prerequisites
