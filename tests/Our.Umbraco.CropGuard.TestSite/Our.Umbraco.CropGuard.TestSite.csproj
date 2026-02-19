@@ -15,4 +15,14 @@
     <ProjectReference Include="..\..\src\Our.Umbraco.CropGuard\Our.Umbraco.CropGuard.csproj" />
   </ItemGroup>
 
+  <!-- Auto-copy App_Plugins from the referenced project to wwwroot for development -->
+  <Target Name="CopyAppPlugins" AfterTargets="Build">
+    <ItemGroup>
+      <AppPluginFiles Include="..\..\src\Our.Umbraco.CropGuard\App_Plugins\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AppPluginFiles)"
+          DestinationFiles="@(AppPluginFiles->'$(MSBuildProjectDirectory)\wwwroot\App_Plugins\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>

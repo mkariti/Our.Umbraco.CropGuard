@@ -43,3 +43,4 @@ tests/Our.Umbraco.CropGuard.TestSite/umbraco-package-schema.json
 .DS_Store
 Thumbs.db
 .claude/
+tests/Our.Umbraco.CropGuard.TestSite/wwwroot/App_Plugins/
