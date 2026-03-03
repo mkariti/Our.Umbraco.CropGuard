@@ -27,11 +27,10 @@ public sealed class CropGuardComposer : IComposer
         // Core service — singleton because it owns the in-memory crop cache
         builder.Services.AddSingleton<IAllowedCropService, AllowedCropService>();
 
-        // Auto-invalidate cache when data types or media types change
+        // Invalidate cache when an ImageCropper data type is saved or deleted.
+        // Media type changes don't affect crop definitions (those live on data types).
         builder.AddNotificationHandler<DataTypeSavedNotification, CropCacheInvalidator>();
         builder.AddNotificationHandler<DataTypeDeletedNotification, CropCacheInvalidator>();
-        builder.AddNotificationHandler<MediaTypeSavedNotification, CropCacheInvalidator>();
-        builder.AddNotificationHandler<MediaTypeDeletedNotification, CropCacheInvalidator>();
 
         // Register the IStartupFilter that inserts our middleware into the pipeline
         // at startup — before ImageSharp.Web processes image requests.

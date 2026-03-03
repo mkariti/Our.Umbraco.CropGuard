@@ -5,22 +5,30 @@ using Umbraco.Cms.Core.Notifications;
 namespace Our.Umbraco.CropGuard.Notifications;
 
 /// <summary>
-/// Listens for Umbraco data-type and media-type save/delete events and
-/// invalidates the crop cache so the next request picks up the latest definitions.
+/// Invalidates the crop cache when an ImageCropper data type is saved or deleted.
+/// Other data type changes (rich text, content picker, etc.) are ignored.
+/// Media type notifications are not needed — crop definitions live on data types, not media types.
 /// </summary>
 public sealed class CropCacheInvalidator :
     INotificationHandler<DataTypeSavedNotification>,
-    INotificationHandler<DataTypeDeletedNotification>,
-    INotificationHandler<MediaTypeSavedNotification>,
-    INotificationHandler<MediaTypeDeletedNotification>
+    INotificationHandler<DataTypeDeletedNotification>
 {
+    private const string ImageCropperAlias = "Umbraco.ImageCropper";
+
     private readonly IAllowedCropService _cropService;
 
     public CropCacheInvalidator(IAllowedCropService cropService)
         => _cropService = cropService;
 
-    public void Handle(DataTypeSavedNotification notification) => _cropService.InvalidateCache();
-    public void Handle(DataTypeDeletedNotification notification) => _cropService.InvalidateCache();
-    public void Handle(MediaTypeSavedNotification notification) => _cropService.InvalidateCache();
-    public void Handle(MediaTypeDeletedNotification notification) => _cropService.InvalidateCache();
+    public void Handle(DataTypeSavedNotification notification)
+    {
+        if (notification.SavedEntities.Any(dt => dt.EditorAlias == ImageCropperAlias))
+            _cropService.InvalidateCache();
+    }
+
+    public void Handle(DataTypeDeletedNotification notification)
+    {
+        if (notification.DeletedEntities.Any(dt => dt.EditorAlias == ImageCropperAlias))
+            _cropService.InvalidateCache();
+    }
 }

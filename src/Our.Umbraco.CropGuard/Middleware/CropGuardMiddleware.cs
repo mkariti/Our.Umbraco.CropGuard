@@ -56,14 +56,24 @@ public sealed class CropGuardMiddleware
         => context.Request.Path.StartsWithSegments(opts.MediaPathPrefix, StringComparison.OrdinalIgnoreCase)
            && context.Request.QueryString.HasValue;
 
+    // ImageSharp parameters that trigger image processing even without width/height.
+    // cc = crop coordinates, rxy = resize anchor point.
+    private static readonly string[] _processingParams = ["cc", "rxy"];
+
     private async Task<bool> IsAllowedAsync(IQueryCollection query, CropGuardOptions opts)
     {
         var hasWidth = TryParsePositiveInt(query["width"], out var width);
         var hasHeight = TryParsePositiveInt(query["height"], out var height);
+        var hasProcessingParams = _processingParams.Any(query.ContainsKey);
 
-        // No resize parameters — caller wants the original image.
-        if (!hasWidth && !hasHeight)
+        // No resize or processing parameters — caller wants the original image.
+        if (!hasWidth && !hasHeight && !hasProcessingParams)
             return opts.AllowOriginalImage;
+
+        // Processing parameters (e.g. cc, rxy) without dimensions are always blocked —
+        // they trigger ImageSharp work but carry no crop size to validate against.
+        if (!hasWidth && !hasHeight)
+            return false;
 
         // Partial dimensions (width-only or height-only) are also checked against the crop list.
         // Treat missing dimension as 0 so it still has a unique key entry if needed.
