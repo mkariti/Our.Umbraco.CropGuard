@@ -1,0 +1,19 @@
+<Project>
+  <!--
+    Copies the CropGuard App_Plugins to the consuming project's wwwroot/App_Plugins/
+    directory at build time so the backoffice dashboard is visible.
+
+    This is a temporary solution until the package migrates to Microsoft.NET.Sdk.Razor
+    (Static Web Assets), which will handle this automatically.
+  -->
+  <Target Name="CopyCropGuardAppPlugins" AfterTargets="Build">
+    <ItemGroup>
+      <_CropGuardAppPluginFiles
+        Include="$(MSBuildThisFileDirectory)..\App_Plugins\**\*" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(_CropGuardAppPluginFiles)"
+      DestinationFiles="@(_CropGuardAppPluginFiles->'$(MSBuildProjectDirectory)\wwwroot\App_Plugins\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
+</Project>

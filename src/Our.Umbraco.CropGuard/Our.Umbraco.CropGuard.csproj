@@ -21,13 +21,17 @@
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>Initial release with dynamic crop detection, static crop configuration, and custom crop dashboard.</PackageReleaseNotes>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- Icon is optional — package can be published without it -->
+  <PropertyGroup Condition="Exists('icon.png')">
+    <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
 
   <!-- ASP.NET Core APIs (HttpContext, IMiddleware, etc.) -->
@@ -39,14 +43,24 @@
     <PackageReference Include="Umbraco.Cms.Core" Version="17.0.0" />
   </ItemGroup>
 
-  <!-- Bundle App_Plugins into the NuGet package as content files -->
+  <!-- Store App_Plugins at the package root so the .targets file can locate them -->
   <ItemGroup>
-    <Content Include="App_Plugins\**\*">
+    <None Include="App_Plugins\**\*">
       <Pack>true</Pack>
-      <PackagePath>contentFiles\any\any\App_Plugins\%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <BuildAction>Content</BuildAction>
-    </Content>
+      <PackagePath>App_Plugins\%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <!--
+    MSBuild .targets file auto-imported by consuming projects.
+    Copies App_Plugins to wwwroot/App_Plugins/ at build time.
+    This will be replaced by Static Web Assets once the project migrates to SDK.Razor.
+  -->
+  <ItemGroup>
+    <None Include="build\Our.Umbraco.CropGuard.targets">
+      <Pack>true</Pack>
+      <PackagePath>build\Our.Umbraco.CropGuard.targets</PackagePath>
+    </None>
   </ItemGroup>
 
   <!-- Include README and icon in the package -->
