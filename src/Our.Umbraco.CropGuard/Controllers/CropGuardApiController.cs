@@ -11,7 +11,7 @@ namespace Our.Umbraco.CropGuard.Controllers;
 /// Secured to backoffice users via Umbraco's built-in authorization policy.
 /// </summary>
 [ApiController]
-[Authorize(Policy = "UmbracoBackOfficeDefaultPolicy")]
+[Authorize(Policy = "BackOfficeAccess")]
 [Route("umbraco/management/api/v1/cropguard")]
 public sealed class CropGuardApiController : ControllerBase
 {
