@@ -143,4 +143,60 @@ public sealed class CropGuardMiddlewareTests
 
         Assert.Equal(400, ctx.Response.StatusCode);
     }
+
+    // ── cc/rxy bypass regression (commit 307d761) ─────────────────────────────
+
+    [Fact]
+    public async Task WhenCcParamPresentWithoutDimensions_Returns400_EvenIfAllowOriginalTrue()
+    {
+        var next = Substitute.For<RequestDelegate>();
+        var mw = BuildMiddleware(next);
+        var ctx = MakeContext("/media/image.jpg", "?cc=0,0.35,1,0.65");
+
+        await mw.InvokeAsync(ctx);
+
+        await next.DidNotReceive().Invoke(Arg.Any<HttpContext>());
+        Assert.Equal(400, ctx.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task WhenRxyParamPresentWithoutDimensions_Returns400()
+    {
+        var next = Substitute.For<RequestDelegate>();
+        var mw = BuildMiddleware(next);
+        var ctx = MakeContext("/media/image.jpg", "?rxy=0.5,0.5");
+
+        await mw.InvokeAsync(ctx);
+
+        await next.DidNotReceive().Invoke(Arg.Any<HttpContext>());
+        Assert.Equal(400, ctx.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task WhenCcParamPairedWithAllowedDimensions_PassesThrough()
+    {
+        _cropService.IsAllowedAsync(800, 600).Returns(true);
+        var next = Substitute.For<RequestDelegate>();
+        var mw = BuildMiddleware(next);
+        var ctx = MakeContext("/media/image.jpg", "?cc=0,0,1,1&width=800&height=600");
+
+        await mw.InvokeAsync(ctx);
+
+        await next.Received(1).Invoke(ctx);
+        Assert.Equal(200, ctx.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task WhenCcParamPairedWithDisallowedDimensions_Returns400()
+    {
+        _cropService.IsAllowedAsync(1234, 5678).Returns(false);
+        var next = Substitute.For<RequestDelegate>();
+        var mw = BuildMiddleware(next);
+        var ctx = MakeContext("/media/image.jpg", "?cc=0,0,1,1&width=1234&height=5678");
+
+        await mw.InvokeAsync(ctx);
+
+        await next.DidNotReceive().Invoke(Arg.Any<HttpContext>());
+        Assert.Equal(400, ctx.Response.StatusCode);
+    }
 }
