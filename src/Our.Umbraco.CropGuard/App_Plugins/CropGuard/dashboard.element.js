@@ -1,7 +1,10 @@
 import { LitElement, html, css, nothing } from "@umbraco-cms/backoffice/external/lit";
 import { UmbElementMixin } from "@umbraco-cms/backoffice/element-api";
+import { umbHttpClient } from '@umbraco-cms/backoffice/http-client';
+import { tryExecute } from '@umbraco-cms/backoffice/resources';
 
 const API_BASE = "/umbraco/management/api/v1/cropguard";
+const SECURITY = [{ scheme: "bearer", type: "http" }];
 
 class CropGuardDashboard extends UmbElementMixin(LitElement) {
   static properties = {
@@ -92,15 +95,16 @@ class CropGuardDashboard extends UmbElementMixin(LitElement) {
   async _load() {
     this._loading = true;
     this._error = null;
-    try {
-      const res = await fetch(`${API_BASE}/crops`, { credentials: "same-origin" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      this._crops = await res.json();
-    } catch (e) {
-      this._error = e.message;
-    } finally {
-      this._loading = false;
+    const { data, error } = await tryExecute(
+      this,
+      umbHttpClient.get({ url: `${API_BASE}/crops`, security: SECURITY })
+    );
+    if (error) {
+      this._error = error.message ?? String(error);
+    } else {
+      this._crops = data ?? [];
     }
+    this._loading = false;
   }
 
   async _addCrop() {
@@ -111,41 +115,43 @@ class CropGuardDashboard extends UmbElementMixin(LitElement) {
       return;
     }
     this._saving = true;
-    try {
-      const res = await fetch(`${API_BASE}/crops`, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ width, height, alias: this._newAlias || null }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { error } = await tryExecute(
+      this,
+      umbHttpClient.post({
+        url: `${API_BASE}/crops`,
+        body: { width, height, alias: this._newAlias || null },
+        security: SECURITY,
+      })
+    );
+    if (error) {
+      alert(`Failed to add crop: ${error.message ?? error}`);
+    } else {
       this._newWidth = "";
       this._newHeight = "";
       this._newAlias = "";
       await this._load();
-    } catch (e) {
-      alert(`Failed to add crop: ${e.message}`);
-    } finally {
-      this._saving = false;
     }
+    this._saving = false;
   }
 
   async _removeCrop(width, height) {
     if (!confirm(`Remove crop ${width}×${height}?`)) return;
-    try {
-      const res = await fetch(`${API_BASE}/crops/${width}/${height}`, {
-        method: "DELETE",
-        credentials: "same-origin",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      await this._load();
-    } catch (e) {
-      alert(`Failed to remove crop: ${e.message}`);
+    const { error } = await tryExecute(
+      this,
+      umbHttpClient.delete({ url: `${API_BASE}/crops/${width}/${height}`, security: SECURITY })
+    );
+    if (error) {
+      alert(`Failed to remove crop: ${error.message ?? error}`);
+      return;
     }
+    await this._load();
   }
 
   async _refresh() {
-    await fetch(`${API_BASE}/crops/refresh`, { method: "POST", credentials: "same-origin" });
+    await tryExecute(
+      this,
+      umbHttpClient.post({ url: `${API_BASE}/crops/refresh`, security: SECURITY })
+    );
     await this._load();
   }
 
